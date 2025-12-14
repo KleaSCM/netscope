@@ -32,8 +32,8 @@
 ### Phase 3: Behavioral Analysis 
 **Goal**: Detect unusual behavior and privacy leaks
 
-- [ ] Session reconstruction
-- [ ] Behavioral baseline per device
+- [x] Session reconstruction
+- [x] Behavioral baseline per device
 - [ ] Anomaly detection algorithms
 - [ ] Privacy leak detection
 - [ ] Pattern matching engine

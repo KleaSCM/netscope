@@ -107,7 +107,34 @@ func selectInterface() (*capture.NetworkInterface, error) {
 	// Add "Show all interfaces" option
 	options = append(options, "Show all interfaces (including loopback/down)")
 
-	idx, err := Select("Select Network Interface:", options)
+	// Try to detect and suggest the best interface
+	ClearScreen()
+	fmt.Println(GetBanner())
+	fmt.Println("Select Network Interface:")
+	fmt.Println(string(make([]rune, 60)))
+
+	defaultIface, err := capture.GetDefaultInterface()
+	if err == nil && defaultIface != nil {
+		// Find the index of the recommended interface
+		recommendedIdx := -1
+		for i, iface := range validInterfaces {
+			if iface.Name == defaultIface.Name {
+				recommendedIdx = i
+				break
+			}
+		}
+
+		if recommendedIdx >= 0 {
+			fmt.Printf("\n💡 Recommended: Option %d - %s\n", recommendedIdx+1, defaultIface.Name)
+			if len(defaultIface.Addresses) > 0 {
+				fmt.Printf("   IP Address: %s\n", defaultIface.Addresses[0])
+			}
+			fmt.Println("   This is your active network interface")
+			fmt.Println()
+		}
+	}
+
+	idx, err := Select("", options)
 	if err != nil {
 		return nil, err
 	}

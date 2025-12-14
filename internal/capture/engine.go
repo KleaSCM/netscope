@@ -21,6 +21,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/kleaSCM/netscope/internal/analyzer"
 	"github.com/kleaSCM/netscope/internal/correlator"
 	"github.com/kleaSCM/netscope/internal/enricher"
 	"github.com/kleaSCM/netscope/internal/models"
@@ -30,12 +31,14 @@ import (
 
 // Orchestrates the packet capture process, managing the pcap handle and processing pipeline.
 type Engine struct {
-	interfaceName string
-	handle        *pcap.Handle
-	packetSource  *gopacket.PacketSource
-	flowTable     *correlator.FlowTable
-	geoIP         *enricher.GeoIPService
-	deviceTracker *enricher.DeviceTracker
+	interfaceName   string
+	handle          *pcap.Handle
+	packetSource    *gopacket.PacketSource
+	flowTable       *correlator.FlowTable
+	geoIP           *enricher.GeoIPService
+	deviceTracker   *enricher.DeviceTracker
+	sessionTracker  *correlator.SessionTracker
+	baselineTracker *analyzer.BaselineTracker
 
 	// Statistics
 	packetsProcessed uint64
@@ -99,10 +102,12 @@ func NewEngine(config *Config, store storage.Storage) (*Engine, error) {
 	}
 
 	engine := &Engine{
-		interfaceName: config.Interface,
-		flowTable:     correlator.NewFlowTable(geoIP),
-		geoIP:         geoIP,
-		deviceTracker: tracker,
+		interfaceName:   config.Interface,
+		flowTable:       correlator.NewFlowTable(geoIP),
+		geoIP:           geoIP,
+		deviceTracker:   tracker,
+		sessionTracker:  correlator.NewSessionTracker(5 * time.Minute),
+		baselineTracker: analyzer.NewBaselineTracker(100),
 	}
 
 	// Initialize inactive pcap handle to apply configuration settings
@@ -229,6 +234,16 @@ func (e *Engine) Start(ctx context.Context, handler func(PacketInfo)) error {
 					info.DstDomain = flow.DstDomain
 				} else if flow.TLSSNI != "" {
 					info.DstDomain = flow.TLSSNI
+				}
+
+				// Track session (groups related flows)
+				if e.sessionTracker != nil {
+					e.sessionTracker.TrackFlow(flow)
+				}
+
+				// Update behavioral baseline
+				if e.baselineTracker != nil && info.EthSrcMAC != "" {
+					e.baselineTracker.UpdateBaseline(info.EthSrcMAC, flow)
 				}
 			}
 
@@ -430,12 +445,22 @@ func (e *Engine) toModelPacket(info PacketInfo) *models.Packet {
 	return p
 }
 
-// GetActiveFlows returns the current list of active flows
+// Returns the active flows from the flow table for display and analysis.
 func (e *Engine) GetActiveFlows() []*models.Flow {
 	if e.flowTable == nil {
 		return nil
 	}
 	return e.flowTable.GetActiveFlows()
+}
+
+// Returns the session tracker for accessing session data.
+func (e *Engine) GetSessionTracker() *correlator.SessionTracker {
+	return e.sessionTracker
+}
+
+// Returns the baseline tracker for accessing behavioral baselines.
+func (e *Engine) GetBaselineTracker() *analyzer.BaselineTracker {
+	return e.baselineTracker
 }
 
 // IsRunning returns whether the engine is currently capturing
