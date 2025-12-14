@@ -1,0 +1,58 @@
+graph TD
+    A[Network Interface] -->|Raw Packets| B[Capture Engine]
+    B -->|Packet Buffer| C[Protocol Parser]
+    
+    C -->|Ethernet Frames| D[Layer 2 Parser]
+    C -->|IP Packets| E[Layer 3 Parser]
+    C -->|TCP/UDP Segments| F[Layer 4 Parser]
+    C -->|App Data| G[Layer 7 Parser]
+    
+    G -->|DNS Queries| H[DNS Parser]
+    G -->|TLS Handshakes| I[TLS Parser]
+    G -->|HTTP Requests| J[HTTP Parser]
+    G -->|Other Protocols| K[Protocol Handlers]
+    
+    D --> L[Flow Builder]
+    E --> L
+    F --> L
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    
+    L -->|5-Tuple Flows| M[Correlator]
+    H -->|DNS Records| M
+    
+    M -->|Enriched Flows| N[Enricher]
+    
+    N -->|GeoIP Lookup| O[GeoIP Database]
+    N -->|Device Fingerprint| P[Device DB]
+    N -->|JA3 Hash| Q[Fingerprint DB]
+    
+    N -->|Complete Flow Data| R[Storage Layer]
+    
+    R -->|SQLite/Postgres| S[(Database)]
+    
+    S --> T[Analyzer]
+    T -->|Patterns| U[Anomaly Detection]
+    T -->|Baseline| V[Behavior Analysis]
+    T -->|Privacy| W[Privacy Scanner]
+    
+    S --> X[Query API]
+    X --> Y[CLI Interface]
+    X --> Z[Web Dashboard]
+    
+    U -.Alert.-> AA[Alert System]
+    V -.Alert.-> AA
+    W -.Alert.-> AA
+    
+    style A fill:#e1f5ff
+    style B fill:#fff3e0
+    style C fill:#fff3e0
+    style L fill:#f3e5f5
+    style M fill:#f3e5f5
+    style N fill:#e8f5e9
+    style R fill:#fce4ec
+    style S fill:#fce4ec
+    style T fill:#fff9c4
+    style Z fill:#e0f2f1

@@ -1,0 +1,62 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data files (runtime generated)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# GeoIP databases (download separately)
+data/geoip/*.mmdb
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# OS-specific
+Thumbs.db
+.Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Documentation artifacts (internal use only)
+DESIGNDOC
+StyleGuide.md
+Makefile
+LICENSE
+
+# Environment files
+.env
+.env.local
