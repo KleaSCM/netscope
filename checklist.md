@@ -21,7 +21,7 @@
 - [x] DNS correlation engine
 - [x] GeoIP integration
 - [x] Device fingerprinting
-- [ ] JA3/JA4 fingerprinting
+- [x] JA3/JA4 fingerprinting
 - [ ] Application identification
 - [ ] Traffic classification
 

@@ -413,6 +413,20 @@ func (e *Engine) toModelPacket(info PacketInfo) *models.Packet {
 		}
 	}
 
+	// Add TLS info
+	if info.Protocol == "TLS" {
+		tlsInfo, _ := parser.ParseTLS(info.RawPacket)
+		if tlsInfo != nil {
+			p.TLS = &models.TLS{
+				SNI:         tlsInfo.SNI,
+				Version:     tlsInfo.Version,
+				CipherSuite: tlsInfo.CipherSuite,
+				Handshake:   tlsInfo.Handshake,
+				JA3:         tlsInfo.JA3,
+			}
+		}
+	}
+
 	return p
 }
 

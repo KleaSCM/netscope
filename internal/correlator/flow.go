@@ -23,6 +23,7 @@ type FlowTable struct {
 	flows    map[models.FlowKey]*models.Flow
 	dnsCache *DNSCache
 	geoIP    *enricher.GeoIPService
+	ja3DB    *enricher.JA3Database
 	mu       sync.RWMutex
 }
 
@@ -32,6 +33,7 @@ func NewFlowTable(geoIP *enricher.GeoIPService) *FlowTable {
 		flows:    make(map[models.FlowKey]*models.Flow),
 		dnsCache: NewDNSCache(),
 		geoIP:    geoIP,
+		ja3DB:    enricher.NewJA3Database(),
 	}
 }
 
@@ -117,6 +119,13 @@ func (FT *FlowTable) Update(Packet *models.Packet) *models.Flow {
 	}
 	if Packet.TLS != nil && Flow.TLSSNI == "" {
 		Flow.TLSSNI = Packet.TLS.SNI
+	}
+	if Packet.TLS != nil && Flow.JA3 == "" {
+		Flow.JA3 = Packet.TLS.JA3
+		// Lookup application from JA3 database
+		if Flow.JA3 != "" && FT.ja3DB != nil {
+			Flow.JA3Application = FT.ja3DB.Lookup(Flow.JA3)
+		}
 	}
 
 	return Flow

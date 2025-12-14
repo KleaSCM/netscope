@@ -41,6 +41,10 @@ type Flow struct {
 	DstCity     string // GeoIP City
 	DstASN      string // GeoIP ASN
 
+	// TLS Fingerprinting
+	JA3            string // JA3 fingerprint hash
+	JA3Application string // Identified application from JA3
+
 	// Runtime Internal
 	LastPersisted time.Time `json:"-"` // Not persisted to DB, used for delta tracking
 }

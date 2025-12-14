@@ -50,6 +50,7 @@ type TLS struct {
 	Version     string
 	CipherSuite string
 	Handshake   bool
+	JA3         string // JA3 fingerprint hash
 }
 
 // Represents Data Link Layer (Ethernet) information.

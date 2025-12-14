@@ -23,6 +23,7 @@ type TLSInfo struct {
 	Version     string
 	CipherSuite string
 	Handshake   bool
+	JA3         string // JA3 fingerprint hash
 }
 
 // Extracts TLS information from a packet.
@@ -131,7 +132,8 @@ func ParseTLS(packet gopacket.Packet) (*TLSInfo, error) {
 
 	info := &TLSInfo{
 		Handshake: true,
-		Version:   "TLS", // General placeholder, specific version logic is complex with 1.3
+		Version:   "TLS",                // General placeholder, specific version logic is complex with 1.3
+		JA3:       CalculateJA3(packet), // Calculate JA3 fingerprint
 	}
 
 	// Iterate extensions to find SNI (Type 0)

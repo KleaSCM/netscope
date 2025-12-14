@@ -6,7 +6,7 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 
 ---
 
-## 🎯 Project Goals
+## Project Goals
 
 - **Observe & Understand**: Capture and analyze all network traffic metadata
 - **Device Intelligence**: Automatically identify and profile devices on your network
@@ -17,7 +17,7 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 ### Phase 1: Foundation (Current Focus)
 - Real-time packet capture from network interfaces
@@ -69,7 +69,7 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -125,7 +125,7 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 netscope/
@@ -227,7 +227,7 @@ netscope/
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Core
 - **Language**: Go 1.21+
@@ -250,9 +250,9 @@ netscope/
 
 ---
 
-## 📋 Development Roadmap
+## Development Roadmap
 
-### ✅ Phase 1: Foundation (Weeks 1-5)
+### Phase 1: Foundation (Weeks 1-5)
 **Goal**: Capture, parse, store, query basic traffic data
 
 - [x] Project structure setup
@@ -346,7 +346,7 @@ netscope/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 ```bash
@@ -396,7 +396,7 @@ sudo ./netscope web --port 8080
 
 ---
 
-## 🔒 Security & Ethics
+## Security & Ethics
 
 ### What This Tool Does
 - ✅ Captures metadata about network traffic
@@ -427,9 +427,10 @@ sudo ./netscope web --port 8080
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - [Architecture Overview](docs/architecture.md)
 - [Protocol Parsing Guide](docs/protocol-parsing.md)
 - [API Documentation](docs/api.md)
 - [Deployment Guide](docs/deployment.md)
+- [Deployment Guide](checklist.md)
