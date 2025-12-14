@@ -22,8 +22,8 @@
 - [x] GeoIP integration
 - [x] Device fingerprinting
 - [x] JA3/JA4 fingerprinting
-- [ ] Application identification
-- [ ] Traffic classification
+- [x] Application identification
+- [x] Traffic classification
 
 **Milestone**: Every connection shows device → domain → location → app
 

@@ -20,20 +20,27 @@ import (
 
 // Manages active network flows.
 type FlowTable struct {
-	flows    map[models.FlowKey]*models.Flow
-	dnsCache *DNSCache
-	geoIP    *enricher.GeoIPService
-	ja3DB    *enricher.JA3Database
-	mu       sync.RWMutex
+	flows         map[models.FlowKey]*models.Flow
+	dnsCache      *DNSCache
+	geoIP         *enricher.GeoIPService
+	ja3DB         *enricher.JA3Database
+	appIdentifier *enricher.ApplicationIdentifier
+	classifier    *enricher.TrafficClassifier
+	mu            sync.RWMutex
 }
 
 // Creates a new flow table.
 func NewFlowTable(geoIP *enricher.GeoIPService) *FlowTable {
+	ja3DB := enricher.NewJA3Database()
+	appID := enricher.NewApplicationIdentifier(ja3DB)
+
 	return &FlowTable{
-		flows:    make(map[models.FlowKey]*models.Flow),
-		dnsCache: NewDNSCache(),
-		geoIP:    geoIP,
-		ja3DB:    enricher.NewJA3Database(),
+		flows:         make(map[models.FlowKey]*models.Flow),
+		dnsCache:      NewDNSCache(),
+		geoIP:         geoIP,
+		ja3DB:         ja3DB,
+		appIdentifier: appID,
+		classifier:    enricher.NewTrafficClassifier(appID),
 	}
 }
 
@@ -126,6 +133,16 @@ func (FT *FlowTable) Update(Packet *models.Packet) *models.Flow {
 		if Flow.JA3 != "" && FT.ja3DB != nil {
 			Flow.JA3Application = FT.ja3DB.Lookup(Flow.JA3)
 		}
+	}
+
+	// Application Identification (combines JA3, domain, port)
+	if Flow.Application == "" && FT.appIdentifier != nil {
+		Flow.Application = FT.appIdentifier.Identify(Flow)
+	}
+
+	// Traffic Classification
+	if Flow.TrafficClass == "" && FT.classifier != nil {
+		Flow.TrafficClass = FT.classifier.Classify(Flow)
 	}
 
 	return Flow

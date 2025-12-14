@@ -45,6 +45,10 @@ type Flow struct {
 	JA3            string // JA3 fingerprint hash
 	JA3Application string // Identified application from JA3
 
+	// Application Identification & Classification
+	Application  string // Identified application (e.g., "YouTube", "Spotify")
+	TrafficClass string // Traffic category (e.g., "Streaming", "Social Media")
+
 	// Runtime Internal
 	LastPersisted time.Time `json:"-"` // Not persisted to DB, used for delta tracking
 }
