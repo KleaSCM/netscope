@@ -103,7 +103,7 @@ func (s *SQLiteStorage) SaveFlow(f *models.Flow) error {
 	INSERT INTO flows (device_id, src_ip, dst_ip, src_port, dst_port, protocol, dst_domain, traffic_type, start_time, end_time, bytes_sent, packets_sent, app_protocol)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	// Simplified insert for now. Note: the schema has more fields, matching them up:
+	// Insert flow record.
 	// Missing: dst_country, city, asn, ja3, etc. Phase 1 doesn't have them all.
 	// Also Flow model has Key but DB separates 5-tuple.
 
@@ -277,4 +277,37 @@ func (s *SQLiteStorage) ListWiFiClients() ([]*models.WiFiClient, error) {
 		clients = append(clients, &c)
 	}
 	return clients, nil
+}
+
+// Note: This only stores the event metadata; raw packet data is handled by the capture engine/pcap.
+func (s *SQLiteStorage) SaveHandshake(hs *models.Handshake) error {
+	query := `
+	INSERT INTO handshakes (bssid, client_mac, is_full, timestamp)
+	VALUES (?, ?, ?, ?)
+	`
+	_, err := s.db.Exec(query, hs.BSSID, hs.ClientMAC, hs.IsFull, hs.Timestamp)
+	if err != nil {
+		return fmt.Errorf("failed to save handshake: %w", err)
+	}
+	return nil
+}
+
+// Returns handshakes sorted by newest first.
+func (s *SQLiteStorage) ListHandshakes() ([]*models.Handshake, error) {
+	query := `SELECT id, bssid, client_mac, is_full, timestamp FROM handshakes ORDER BY timestamp DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list handshakes: %w", err)
+	}
+	defer rows.Close()
+
+	var handshakes []*models.Handshake
+	for rows.Next() {
+		var hs models.Handshake
+		if err := rows.Scan(&hs.ID, &hs.BSSID, &hs.ClientMAC, &hs.IsFull, &hs.Timestamp); err != nil {
+			return nil, err
+		}
+		handshakes = append(handshakes, &hs)
+	}
+	return handshakes, nil
 }

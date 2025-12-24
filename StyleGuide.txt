@@ -1,0 +1,306 @@
+# Universal Code Style Guide
+
+> Languages: TypeScript, TSX, C++, Go, Rust
+
+---
+
+## 1. Formatting
+
+### 1.1 - Use Tabs for Indentation
+All code **must use tab characters** for indentation. Spaces are forbidden.
+
+### 1.2 - Limit Line Length to 120 Characters
+Lines should not exceed 120 characters. Break long lines at logical boundaries (e.g., after operators, commas).
+
+### 1.3 - Use K&R Bracing Style
+Braces must open on the same line as control structures.
+
+```cpp
+if (x) {
+	DoSomething();
+}
+```
+
+### 1.4 - Trim Trailing Whitespace
+No line should end in whitespace. All files must end with a newline.
+
+---
+
+## 2. Naming
+
+### 2.1 - Use PascalCase for All Identifiers
+Identifiers for variables, functions, types, classes, interfaces, and constants must use PascalCase.
+
+```typescript
+const MaxCount = 10;
+class UserProfile { ... }
+function LoadUserData() { ... }
+```
+
+### 2.2 - Use camelCase for Short Local Variables Only
+Temporary or loop-local variables may use camelCase inside functions.
+
+```typescript
+for (let i = 0; i < MaxCount; i++) { ... }
+```
+
+### 2.3 - Do Not Use snake_case or ALL_CAPS
+These naming styles are completely forbidden, including for constants, macros, or defines.
+
+---
+
+## 3. Error Handling
+
+### 3.1 - Do Not Use Exceptions
+Exception-based control flow is disallowed in all languages. This includes throw, try/catch, panic!, etc.
+
+### 3.2 - Return Errors as Values
+All functions must return errors as part of the return type (e.g., Result, std::expected, T, error).
+
+### 3.3 - Handle All Errors Explicitly
+Never suppress or discard errors. No .unwrap(), .expect(), or _ = err patterns unless explicitly tested.
+
+---
+
+## 4. Comments and Documentation
+
+### 4.1 - Comments Must Add Value
+Comments should provide information that isn't immediately obvious from reading the code itself. They must explain one or more of the following:
+
+- **Why** - Rationale for non-obvious decisions
+- **What** - Complex algorithms or business logic that aren't self-evident
+- **How** - Non-trivial implementation details or workarounds
+- **Edge cases** - Boundary conditions, gotchas, known limitations
+- **Performance** - Why this approach was chosen over alternatives
+
+### 4.2 - What NOT to Comment
+
+| ❌ Forbidden               | Reason                                    |
+| ------------------------- | ----------------------------------------- |
+| Syntax explanations       | Code should be self-documenting           |
+| Control flow restatements | Obvious from reading the code             |
+| Variable summaries        | Types and names should convey meaning     |
+| Redundant API docs        | Already covered by type signatures        |
+
+### 4.3 - Comment Examples
+
+✅ **Good Comments:**
+```typescript
+// Binary search here because dataset is always sorted from DB.
+// Linear search caused 200ms delays at 10k+ items.
+
+// Edge case: empty string returns null, not empty array - legacy API contract.
+
+// Using mutex here prevents race condition in concurrent health checks.
+// Attempted lock-free approach in commit abc123 but caused data corruption.
+
+// Set required here - duplicate entries corrupt sync state.
+// Array.includes() profiled at 15ms, Set.has() at 0.3ms for this dataset.
+```
+
+❌ **Bad Comments:**
+```typescript
+// Loop through array
+for (let i = 0; i < items.length; i++) { ... }
+
+// Set x to 5
+const x = 5;
+
+// Call the function
+DoSomething();
+
+// Check if user exists
+if (user) { ... }
+```
+
+### 4.4 - Public API Documentation
+Use structured documentation blocks for all exported functions, classes, and modules:
+
+```typescript
+/**
+ * Parses command-line arguments into structured flags and values.
+ * 
+ * Handles quoted strings, escaped characters, and shell-style syntax.
+ * Returns error if input contains unmatched quotes or invalid escape sequences.
+ * 
+ * Example:
+ *   ParseCommand('run --file "my file.txt" --verbose')
+ *   // Returns: { command: "run", flags: { file: "my file.txt", verbose: true } }
+ */
+function ParseCommand(input: string): Result<Command, ParseError>
+```
+
+### 4.5 - Complex Logic Documentation
+For algorithms, data structures, or performance-critical code, explain:
+- Algorithm choice and time/space complexity
+- Why simpler approaches don't work
+- Measured performance characteristics
+- Known limitations or trade-offs
+
+### 4.6 - Language and Tone
+All comments must be written in clear, professional English. Maintain a neutral, technical tone focused on facts and reasoning.
+
+---
+
+## 5. Defensive Programming
+
+### 5.1 - Assume All Input is Invalid
+Validate everything. Never assume data from the outside world is correct.
+
+### 5.2 - Avoid Global State
+Only compile-time constants are permitted globally. All others must be local or injected.
+
+### 5.3 - Separate Logic from Presentation
+Do not include application logic in render functions or UI code.
+
+---
+
+## 6. Project Structure
+
+### 6.1 - One Module or Component Per File
+Each file should contain one logical unit. File name must match the exported symbol or type.
+
+### 6.2 - Import Order Must Be Standard → Third-Party → Local
+Insert a blank line between each section.
+
+### 6.3 - No Circular Dependencies
+Circular imports are always a violation. You must restructure to break the loop.
+
+---
+
+## 7. Testing
+
+### 7.1 - Do Not Mock Internal Logic
+Mocks are allowed only for boundary layers (e.g., APIs, file systems). Never mock internal domain logic.
+
+### 7.2 - Document All Tests Clearly
+Use clear, professional documentation to describe what the test intends.
+
+### 7.3 - Avoid Snapshot Testing
+Only allowed for UI rendering diffs or large structural comparisons with documented justification.
+
+---
+
+## 8. Tooling and CI Enforcement
+
+### 8.1 - Linters and Formatters Are Mandatory
+CI must block merges that fail lint or formatting checks.
+
+| Language | Tools                    |
+| -------- | ------------------------ |
+| TS/TSX   | ESLint, Prettier         |
+| C++      | clang-format, clang-tidy |
+| Go       | gofmt, golint            |
+| Rust     | rustfmt, Clippy          |
+
+### 8.2 - Linter Configs Must Match This Style Guide
+All rules described here (tabs, naming, line length, bracing) must be enforced.
+
+---
+
+## 9. Data Structures
+
+### 9.1 - Prefer Arrays Over Sets
+Arrays are the default for collections. Use [], Vec, std::vector, etc. unless proven otherwise.
+
+### 9.2 - Set Usage is Strictly Gated
+Use Set, HashSet, BTreeSet, etc. only when:
+- Uniqueness is required for correctness
+- .has() performance is proven
+- Logic explicitly requires set semantics
+
+### 9.3 - Justify Set Usage in Comments
+Every use of a set must include a comment explaining why an array was insufficient.
+
+```typescript
+// Using Set here because duplicate entries would corrupt the sync state.
+```
+
+---
+
+## 10. Prohibited Constructs
+
+| Construct           | Reason                             |
+| ------------------- | ---------------------------------- |
+| Exceptions          | Unpredictable and unsafe           |
+| snake_case          | Nonstandard, unaesthetic           |
+| ALL_CAPS            | Aggressive, legacy                 |
+| Global state        | Unsafe and fragile                 |
+| JSX control logic   | Breaks UI separation model         |
+| Inline control flow | Hurts readability and traceability |
+
+### Clarification - Inline Control Flow
+Inline control means using one-line flow control statements or ternary expressions that reduce clarity:
+
+❌ **Not Allowed:**
+```typescript
+if (x) DoSomething();
+return IsValid() ? "yes" : "no";
+```
+
+✅ **Use:**
+```typescript
+if (x) {
+	DoSomething();
+}
+
+let result;
+if (IsValid()) {
+	result = "yes";
+} else {
+	result = "no";
+}
+```
+
+---
+
+## 11. Module Headers
+
+### 11.1 - All Files Must Begin with a Header Block
+Use a natural-language, prose-style doc block. Do not use @tags.
+
+```typescript
+/**
+ * Command parser module.
+ * 
+ * Handles argument parsing, flag extraction, quote handling,
+ * and shell-compatible input breaking.
+ * 
+ * Author: KleaSCM
+ * Email: KleaSCM@gmail.com
+ */
+```
+
+This applies to:
+- .ts, .tsx
+- .rs
+- .cpp, .hpp
+- .go
+- Test files and modules too
+
+---
+
+## 12. Enforcement
+
+### 12.1 - All Rules Are Binding
+No team or engineer may override this guide without formal, documented approval. All infra and review must enforce it.
+
+### 12.2 - Required in All Repositories
+This file (StyleGuide.txt) must live in the repo root alongside .editorconfig and all tooling configs.
+
+---
+
+## .editorconfig
+
+```ini
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = tab
+indent_size = 4
+max_line_length = 120
+```

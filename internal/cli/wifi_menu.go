@@ -12,6 +12,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/kleaSCM/netscope/internal/analyzer"
 	"github.com/kleaSCM/netscope/internal/storage"
 )
 
@@ -24,6 +25,10 @@ func ShowWiFiMenu(store storage.Storage) error {
 
 	menu.AddOption("Monitor Client Probes (Who is nearby?)", func() error {
 		return runClientMonitor(store)
+	})
+
+	menu.AddOption("Monitor WPA Handshakes (EAPOL)", func() error {
+		return runHandshakeMonitor(store)
 	})
 
 	menu.AddOption("Back to Main Menu", func() error { return ErrExitMenu })
@@ -60,6 +65,21 @@ func runAPScan(store storage.Storage) error {
 					enc,
 					ap.Signal,
 					ap.Vendor)
+			}
+		}
+
+		// Run security analysis to detect rogue APs and other anomalies.
+		alerts := analyzer.DetectRogueAPs(aps)
+		if len(alerts) > 0 {
+			fmt.Println("\n   ⚠️  SECURITY ALERTS DETECTED!")
+			fmt.Println("   " + string(make([]rune, 75)))
+			for _, alert := range alerts {
+				icon := "⚠️"
+				if alert.Severity == "CRITICAL" {
+					icon = "⛔" // Or 🚨
+				}
+
+				fmt.Printf("   %s [%s] %s (%s)\n", icon, alert.Severity, alert.Message, alert.BSSID)
 			}
 		}
 	}
@@ -99,6 +119,42 @@ func runClientMonitor(store storage.Storage) error {
 					truncate(c.Vendor, 20),
 					ssids,
 					c.LastSeen.Format("15:04:05"))
+			}
+		}
+	}
+
+	fmt.Println("\n   [Press Enter to return]")
+	PressEnterToContinue()
+	return nil
+}
+
+func runHandshakeMonitor(store storage.Storage) error {
+	ClearScreen()
+	fmt.Println("🤝 WPA/WPA2 Handshakes (EAPOL)")
+	fmt.Println("   (Captured 4-Way Handshake frames for security auditing)")
+	fmt.Println(string(make([]rune, 80)))
+
+	handshakes, err := store.ListHandshakes()
+	if err != nil {
+		fmt.Printf("Error listing handshakes: %v\n", err)
+	} else {
+		if len(handshakes) == 0 {
+			fmt.Println("\n   No handshakes captured yet.")
+		} else {
+			// Header
+			fmt.Printf("\n   %-18s  %-18s  %-8s  %s\n", "BSSID (Target)", "CLIENT (Victim)", "TYPE", "TIMESTAMP")
+			fmt.Println("   " + string(make([]rune, 75)))
+
+			for _, hs := range handshakes {
+				typeStr := "Partial"
+				if hs.IsFull {
+					typeStr = "FULL 🟢"
+				}
+				fmt.Printf("   %-18s  %-18s  %-8s  %s\n",
+					hs.BSSID,
+					hs.ClientMAC,
+					typeStr,
+					hs.Timestamp.Format("15:04:05"))
 			}
 		}
 	}

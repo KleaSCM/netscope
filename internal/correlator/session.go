@@ -77,7 +77,7 @@ func (st *SessionTracker) TrackFlow(flow *models.Flow) *Session {
 	// Create new session
 	session := &Session{
 		ID:           sessionKey,
-		DeviceMAC:    flow.Key.SrcIP, // Using SrcIP as device identifier for now
+		DeviceMAC:    flow.Key.SrcIP,
 		Application:  flow.Application,
 		Destination:  flow.DstDomain,
 		StartTime:    flow.FirstSeen,

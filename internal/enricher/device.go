@@ -138,7 +138,7 @@ func isPrivateIP(ip string) bool {
 	if strings.HasPrefix(ip, "192.168.") {
 		return true
 	}
-	// 172.16.0.0/12 - Simplified to 172. for now
+	// 172.16.0.0/12 block
 	if strings.HasPrefix(ip, "172.") {
 		return true
 	}

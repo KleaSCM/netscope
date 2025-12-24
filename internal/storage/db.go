@@ -32,4 +32,6 @@ type Storage interface {
 	ListAccessPoints() ([]*models.AccessPoint, error)
 	SaveWiFiClient(client *models.WiFiClient) error
 	ListWiFiClients() ([]*models.WiFiClient, error)
+	SaveHandshake(hs *models.Handshake) error
+	ListHandshakes() ([]*models.Handshake, error)
 }

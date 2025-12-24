@@ -186,8 +186,9 @@ type PacketInfo struct {
 	RawPacket      gopacket.Packet // Full packet for additional parsing
 	Anomalies      []analyzer.Anomaly
 	PrivacyIssues  []analyzer.PrivacyIssue
-	WiFiNetwork    *wifi.WiFiNetwork // [NEW]
-	WiFiClient     *wifi.WiFiClient  // [NEW]
+	WiFiNetwork    *wifi.WiFiNetwork // New
+	WiFiClient     *wifi.WiFiClient  // New
+	Handshake      *models.Handshake // New
 }
 
 // Begins capturing packets in a blocking loop until the context is canceled.
@@ -307,6 +308,11 @@ func (e *Engine) extractPacketInfo(packet gopacket.Packet) PacketInfo {
 			info.Protocol = "802.11 Probe"
 			info.EthSrcMAC = client.MAC
 		}
+		if hs := e.wifiScanner.ParseEAPOL(packet); hs != nil {
+			info.Handshake = hs
+			info.Protocol = "WPA Handshake"
+			info.EthSrcMAC = hs.ClientMAC
+		}
 	}
 
 	// Parse IP (v4/v6) header
@@ -425,18 +431,13 @@ func (e *Engine) toModelPacket(info PacketInfo) *models.Packet {
 		Layer4: &models.Layer4{
 			SrcPort:  int(info.SrcPort),
 			DstPort:  int(info.DstPort),
-			Protocol: info.Protocol, // TODO This needs refinement, simplify for now
+			Protocol: info.Protocol,
 		},
 	}
 
 	// Add enriched info
 	if info.Protocol == "DNS" {
-		// info.DNSInfo is just a string summary, we need the structured data
-		// Since extractPacketInfo returns a flat PacketInfo struct, we might need to parse it again or store it in PacketInfo
-		// To avoid re-parsing, let's assume we can cast the RawPacket layer in a real implementation.
-		// For now, we will re-parse it quickly as it's cleaner than polluting PacketInfo with complex structs
-		// Or better, let's update PacketInfo to hold the parsed DNS data if available
-
+		// Re-parse the packet to extract structured DNS data.
 		if parser.IsDNSPacket(info.RawPacket) {
 			query, response, _ := parser.ParseDNS(info.RawPacket)
 

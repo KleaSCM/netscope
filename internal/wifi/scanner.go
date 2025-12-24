@@ -11,8 +11,11 @@
 package wifi
 
 import (
+	"time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/kleaSCM/netscope/internal/models"
 )
 
 // WiFiNetwork represents a discovered Access Point.
@@ -117,4 +120,36 @@ func (s *Scanner) ParseProbeRequest(packet gopacket.Packet) *WiFiClient {
 	}
 
 	return client
+}
+
+// Inspects 802.11 Data frames for WPA Key material (Type 0x888E).
+func (s *Scanner) ParseEAPOL(packet gopacket.Packet) *models.Handshake {
+	d11Layer := packet.Layer(layers.LayerTypeDot11)
+	if d11Layer == nil {
+		return nil
+	}
+	d11, _ := d11Layer.(*layers.Dot11)
+
+	eapolLayer := packet.Layer(layers.LayerTypeEAPOL)
+	if eapolLayer == nil {
+		return nil
+	}
+
+	hs := &models.Handshake{
+		BSSID:     d11.Address1.String(),
+		ClientMAC: d11.Address2.String(),
+		Timestamp: time.Now(),
+		IsFull:    false,
+	}
+
+	// Normalize addresses based on frame direction (FromDS/ToDS).
+	if d11.Flags.ToDS() {
+		hs.BSSID = d11.Address1.String()
+		hs.ClientMAC = d11.Address2.String()
+	} else if d11.Flags.FromDS() {
+		hs.BSSID = d11.Address2.String()
+		hs.ClientMAC = d11.Address1.String()
+	}
+
+	return hs
 }

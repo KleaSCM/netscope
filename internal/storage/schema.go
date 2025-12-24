@@ -108,4 +108,13 @@ CREATE TABLE IF NOT EXISTS wifi_clients (
     probed_ssids TEXT, -- JSON array
     last_seen TIMESTAMP
 );
+
+-- WPA Handshakes
+CREATE TABLE IF NOT EXISTS handshakes (
+    id INTEGER PRIMARY KEY,
+    bssid TEXT,
+    client_mac TEXT,
+    is_full BOOLEAN,
+    timestamp TIMESTAMP
+);
 `

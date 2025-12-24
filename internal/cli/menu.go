@@ -8,7 +8,7 @@
  * Email: KleaSCM@gmail.com
  */
 
-// this is super simple for now, i might decie to do a full GUI later
+// Menu provides a simple CLI navigation structure.
 
 package cli
 

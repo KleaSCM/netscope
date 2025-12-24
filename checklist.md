@@ -49,32 +49,17 @@
 
 **Goal**: Monitor WiFi-specific security
 
-- [ ] 802.11 frame capture
-- [ ] AP detection & monitoring
-- [ ] Rogue AP detection
-- [ ] Client probing analysis
-- [ ] WPA handshake capture
+- [x] 802.11 frame capture
+- [x] AP detection & monitoring
+- [x] Rogue AP detection
+- [x] Client probing analysis
+- [x] WPA handshake capture
 
 **Milestone**: Full WiFi security audit capabilities
 
 ---
 
-### Phase 5: Visualization
-
-**Goal**: Beautiful, interactive dashboard
-
-- [ ] Web server setup
-- [ ] Real-time dashboard
-- [ ] 3D network topology
-- [ ] Timeline view
-- [ ] Per-device detail pages
-- [ ] Query builder UI
-
-**Milestone**: Production-ready web interface
-
----
-
-### Phase 6: IoT Monitoring
+### Phase 5: IoT Monitoring
 
 **Goal**: Specialized IoT device security
 
@@ -87,7 +72,7 @@
 
 ---
 
-### Phase 7: Advanced Features
+### Phase 6: Advanced Features
 
 **Goal**: ML, alerting, optimization
 
@@ -96,3 +81,16 @@
 - [ ] Automated reporting
 - [ ] Performance optimization
 - [ ] Multi-interface support
+
+### Phase 7: Visualization
+
+**Goal**: Beautiful, interactive dashboard
+
+- [ ] Web server setup
+- [ ] Real-time dashboard
+- [ ] 3D network topology
+- [ ] Timeline view
+- [ ] Per-device detail pages
+- [ ] Query builder UI
+
+**Milestone**: Production-ready web interface
