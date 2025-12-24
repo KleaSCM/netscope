@@ -44,7 +44,8 @@ func main() {
 
 	menu.AddOption("List Network Interfaces", handleListInterfaces)
 	menu.AddOption("Start Packet Capture", func() error { return handleStartCapture(store) })
-	menu.AddOption("Query Data", func() error { return handleQueryData(store) }) // New option
+	menu.AddOption("Query Data", func() error { return handleQueryData(store) })
+	menu.AddOption("WiFi Security 📡", func() error { return cli.ShowWiFiMenu(store) }) // New feature
 	menu.AddOption("Capture History", handleCaptureHistory)
 	menu.AddOption("Settings", handleSettings)
 	menu.AddOption("About", handleAbout)

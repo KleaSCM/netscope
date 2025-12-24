@@ -12,6 +12,7 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/kleaSCM/netscope/internal/models"
@@ -182,4 +183,98 @@ func (s *SQLiteStorage) GetRecentFlows(limit int) ([]*models.Flow, error) {
 		flows = append(flows, &f)
 	}
 	return flows, nil
+}
+
+// SaveAccessPoint persists or updates a WiFi Access Point.
+func (s *SQLiteStorage) SaveAccessPoint(ap *models.AccessPoint) error {
+	query := `
+	INSERT INTO access_points (bssid, ssid, channel, encryption, vendor, signal, first_seen, last_seen)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(bssid) DO UPDATE SET
+		ssid = excluded.ssid,
+		channel = excluded.channel,
+		encryption = excluded.encryption,
+		signal = excluded.signal,
+		last_seen = excluded.last_seen;
+	`
+	_, err := s.db.Exec(query, ap.BSSID, ap.SSID, ap.Channel, ap.Encryption, ap.Vendor, ap.Signal, ap.FirstSeen, ap.LastSeen)
+	if err != nil {
+		return fmt.Errorf("failed to save AP: %w", err)
+	}
+	return nil
+}
+
+// ListAccessPoints retrieves all discovered APs.
+func (s *SQLiteStorage) ListAccessPoints() ([]*models.AccessPoint, error) {
+	query := `SELECT id, bssid, ssid, channel, encryption, vendor, signal, first_seen, last_seen FROM access_points ORDER BY last_seen DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list APs: %w", err)
+	}
+	defer rows.Close()
+
+	var aps []*models.AccessPoint
+	for rows.Next() {
+		var ap models.AccessPoint
+		if err := rows.Scan(&ap.ID, &ap.BSSID, &ap.SSID, &ap.Channel, &ap.Encryption, &ap.Vendor, &ap.Signal, &ap.FirstSeen, &ap.LastSeen); err != nil {
+			return nil, err
+		}
+		aps = append(aps, &ap)
+	}
+	return aps, nil
+}
+
+// SaveWiFiClient persists or updates a WiFi Client probe.
+func (s *SQLiteStorage) SaveWiFiClient(client *models.WiFiClient) error {
+	// Using JSON serialization for ProbedSSIDs avoids the complexity of a many-to-many
+	// relationship table for this simple list.
+	ssidsJSON, err := json.Marshal(client.ProbedSSIDs)
+	if err != nil {
+		// Log error but attempt to save empty list to prevent data loss of the client itself
+		ssidsJSON = []byte("[]")
+	}
+
+	query := `
+	INSERT INTO wifi_clients (mac_address, vendor, probed_ssids, last_seen)
+	VALUES (?, ?, ?, ?)
+	ON CONFLICT(mac_address) DO UPDATE SET
+		probed_ssids = excluded.probed_ssids,
+		last_seen = excluded.last_seen;
+	`
+	_, err = s.db.Exec(query, client.MAC, client.Vendor, string(ssidsJSON), client.LastSeen)
+	if err != nil {
+		return fmt.Errorf("failed to save WiFi client: %w", err)
+	}
+	return nil
+}
+
+// ListWiFiClients retrieves all discovered WiFi clients.
+func (s *SQLiteStorage) ListWiFiClients() ([]*models.WiFiClient, error) {
+	query := `SELECT id, mac_address, vendor, probed_ssids, last_seen FROM wifi_clients ORDER BY last_seen DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clients: %w", err)
+	}
+	defer rows.Close()
+
+	var clients []*models.WiFiClient
+	for rows.Next() {
+		var c models.WiFiClient
+		var ssidJSON string
+
+		if err := rows.Scan(&c.ID, &c.MAC, &c.Vendor, &ssidJSON, &c.LastSeen); err != nil {
+			return nil, err
+		}
+
+		// Unmarshal the JSON array of SSIDs back into the slice.
+		// If unmarshalling fails, we default to an empty slice to keep the UI functional.
+		if len(ssidJSON) > 0 {
+			if err := json.Unmarshal([]byte(ssidJSON), &c.ProbedSSIDs); err != nil {
+				c.ProbedSSIDs = []string{}
+			}
+		}
+
+		clients = append(clients, &c)
+	}
+	return clients, nil
 }

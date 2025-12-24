@@ -26,4 +26,10 @@ type Storage interface {
 	// Flows
 	SaveFlow(flow *models.Flow) error
 	GetRecentFlows(limit int) ([]*models.Flow, error)
+
+	// WiFi
+	SaveAccessPoint(ap *models.AccessPoint) error
+	ListAccessPoints() ([]*models.AccessPoint, error)
+	SaveWiFiClient(client *models.WiFiClient) error
+	ListWiFiClients() ([]*models.WiFiClient, error)
 }

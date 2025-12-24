@@ -86,4 +86,26 @@ CREATE TABLE IF NOT EXISTS tls_handshakes (
     timestamp TIMESTAMP,
     FOREIGN KEY (flow_id) REFERENCES flows(id)
 );
+
+-- Access Points (WiFi)
+CREATE TABLE IF NOT EXISTS access_points (
+    id INTEGER PRIMARY KEY,
+    bssid TEXT UNIQUE,
+    ssid TEXT,
+    channel INTEGER,
+    encryption TEXT,
+    vendor TEXT,
+    signal INTEGER,
+    first_seen TIMESTAMP,
+    last_seen TIMESTAMP
+);
+
+-- WiFi Clients (Probing)
+CREATE TABLE IF NOT EXISTS wifi_clients (
+    id INTEGER PRIMARY KEY,
+    mac_address TEXT UNIQUE,
+    vendor TEXT,
+    probed_ssids TEXT, -- JSON array
+    last_seen TIMESTAMP
+);
 `

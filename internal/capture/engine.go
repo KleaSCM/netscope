@@ -28,6 +28,7 @@ import (
 	"github.com/kleaSCM/netscope/internal/models"
 	"github.com/kleaSCM/netscope/internal/parser"
 	"github.com/kleaSCM/netscope/internal/storage"
+	"github.com/kleaSCM/netscope/internal/wifi"
 )
 
 // Orchestrates the packet capture process, managing the pcap handle and processing pipeline.
@@ -42,6 +43,7 @@ type Engine struct {
 	baselineTracker *analyzer.BaselineTracker
 	anomalyDetector *analyzer.AnomalyDetector
 	privacyScanner  *analyzer.PrivacyScanner
+	wifiScanner     *wifi.Scanner
 
 	// Statistics
 	packetsProcessed uint64
@@ -113,16 +115,16 @@ func NewEngine(config *Config, store storage.Storage) (*Engine, error) {
 		baselineTracker: analyzer.NewBaselineTracker(100),
 		anomalyDetector: analyzer.NewAnomalyDetector(),
 		privacyScanner:  analyzer.NewPrivacyScanner(),
+		wifiScanner:     wifi.NewScanner(),
 	}
 
-	// Initialize inactive pcap handle to apply configuration settings
+	// Initialize inactive pcap handle first to safely configure options
 	inactive, err := pcap.NewInactiveHandle(config.Interface)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inactive handle: %w", err)
 	}
 	defer inactive.CleanUp()
 
-	// Apply capture parameters
 	if err := inactive.SetSnapLen(int(config.SnapLen)); err != nil {
 		return nil, fmt.Errorf("failed to set snaplen: %w", err)
 	}
@@ -135,7 +137,7 @@ func NewEngine(config *Config, store storage.Storage) (*Engine, error) {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
 
-	// Optimize kernel buffer size to reduce packet drops
+	// Optimize kernel buffer size (100MB) to minimize packet drops on high-throughput links
 	if config.BufferSize > 0 {
 		if err := inactive.SetBufferSize(config.BufferSize * 1024 * 1024); err != nil {
 			log.Printf("Warning: failed to set buffer size: %v", err)
@@ -184,6 +186,8 @@ type PacketInfo struct {
 	RawPacket      gopacket.Packet // Full packet for additional parsing
 	Anomalies      []analyzer.Anomaly
 	PrivacyIssues  []analyzer.PrivacyIssue
+	WiFiNetwork    *wifi.WiFiNetwork // [NEW]
+	WiFiClient     *wifi.WiFiClient  // [NEW]
 }
 
 // Begins capturing packets in a blocking loop until the context is canceled.
@@ -289,6 +293,20 @@ func (e *Engine) extractPacketInfo(packet gopacket.Packet) PacketInfo {
 		eth, _ := ethLayer.(*layers.Ethernet)
 		info.EthSrcMAC = eth.SrcMAC.String()
 		info.EthDstMAC = eth.DstMAC.String()
+	}
+
+	// [NEW] Parse WiFi Layers (if Monitor Mode)
+	if e.wifiScanner != nil {
+		if net := e.wifiScanner.ParseBeacon(packet); net != nil {
+			info.WiFiNetwork = net
+			info.Protocol = "802.11 Beacon"
+			info.DeviceHostname = "AP: " + net.SSID
+		}
+		if client := e.wifiScanner.ParseProbeRequest(packet); client != nil {
+			info.WiFiClient = client
+			info.Protocol = "802.11 Probe"
+			info.EthSrcMAC = client.MAC
+		}
 	}
 
 	// Parse IP (v4/v6) header

@@ -105,14 +105,14 @@ func ShowAnomalyMenu(engine *capture.Engine, baselineTracker *analyzer.BaselineT
 		}
 	}
 
-	fmt.Println("⚠️  Anomalies Detected!\n")
+	fmt.Println("⚠️  Anomalies Detected!")
 	fmt.Printf("   🔴 Critical: %d\n", critical)
 	fmt.Printf("   🟠 High: %d\n", high)
 	fmt.Printf("   🟡 Medium: %d\n", medium)
 	fmt.Printf("   🔵 Low: %d\n\n", low)
 
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("Anomaly Details:\n")
+	fmt.Println("Anomaly Details:")
 
 	// Display each anomaly
 	for i, anomaly := range anomalies {

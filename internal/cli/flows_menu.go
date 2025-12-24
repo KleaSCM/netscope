@@ -88,7 +88,7 @@ func ShowActiveFlowsMenu(engine *capture.Engine) error {
 
 	// Display detailed flow table
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("\nDetailed Flows (sorted by recent activity):\n")
+	fmt.Println("\nDetailed Flows (sorted by recent activity):")
 
 	// Limit display to top 20 most recent
 	displayCount := 20

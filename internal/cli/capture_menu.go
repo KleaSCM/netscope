@@ -21,6 +21,7 @@ import (
 
 	"github.com/kleaSCM/netscope/internal/capture"
 	"github.com/kleaSCM/netscope/internal/enricher"
+	"github.com/kleaSCM/netscope/internal/models"
 	"github.com/kleaSCM/netscope/internal/parser"
 	"github.com/kleaSCM/netscope/internal/storage"
 )
@@ -36,22 +37,20 @@ type CaptureConfig struct {
 
 // Displays the capture menu and handles packet capture workflow.
 func ShowCaptureMenu(store storage.Storage) error {
-	// Interface selection is the first required step
+	// First, select interface for capture
 	iface, err := selectInterface()
 	if err != nil {
 		return err
 	}
 
-	// Filter selection allows narrowing down traffic
 	filter, err := selectFilter()
 	if err != nil {
 		return err
 	}
 
-	// Output mode determines verbosity
 	verbose := selectOutputMode()
 
-	// Confirmation step to prevent accidental starts
+	// Show confirmation summary to avoid accidental large captures
 	ClearScreen()
 	fmt.Print(banner)
 	fmt.Println("Capture Configuration:")
@@ -332,6 +331,32 @@ func startCapture(interfaceName, filter string, verbose bool, store storage.Stor
 				}
 			}
 			return
+		}
+
+		// WiFi Capture Persistence
+		if store != nil {
+			if info.WiFiNetwork != nil {
+				ap := &models.AccessPoint{
+					BSSID:      info.WiFiNetwork.BSSID,
+					SSID:       info.WiFiNetwork.SSID,
+					Channel:    info.WiFiNetwork.Channel,
+					Encryption: info.WiFiNetwork.Encryption,
+					Vendor:     info.WiFiNetwork.Vendor,
+					Signal:     info.WiFiNetwork.Signal,
+					FirstSeen:  info.Timestamp,
+					LastSeen:   info.Timestamp,
+				}
+				store.SaveAccessPoint(ap)
+			}
+			if info.WiFiClient != nil {
+				client := &models.WiFiClient{
+					MAC:         info.WiFiClient.MAC,
+					Vendor:      info.WiFiClient.Vendor,
+					ProbedSSIDs: info.WiFiClient.ProbedSSIDs,
+					LastSeen:    info.Timestamp,
+				}
+				store.SaveWiFiClient(client)
+			}
 		}
 
 		// Regular packet handling
