@@ -14,11 +14,14 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 )
+
+var ErrExitMenu = errors.New("exit menu")
 
 const banner = `
 ╔═══════════════════════════════════════════════════════════╗
@@ -102,6 +105,9 @@ func (m *Menu) Display() error {
 		}
 
 		err = selectedOption.Action()
+		if err == ErrExitMenu {
+			return nil
+		}
 		if err != nil {
 			fmt.Printf("\n❌ Error: %v\n", err)
 			fmt.Print("Press Enter to continue...")

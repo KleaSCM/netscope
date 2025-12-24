@@ -26,7 +26,7 @@ func ShowQueryMenu(store storage.Storage) error {
 	menu.AddOption("List Recent Flows", func() error {
 		return listRecentFlows(store)
 	})
-	menu.AddOption("Back to Main Menu", func() error { return nil })
+	menu.AddOption("Back to Main Menu", func() error { return ErrExitMenu })
 
 	return menu.Display()
 }

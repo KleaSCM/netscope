@@ -1,6 +1,7 @@
 ## Development Roadmap
 
-### Phase 1: Foundation 
+### Phase 1: Foundation
+
 **Goal**: Capture, parse, store, query basic traffic data
 
 - [x] Project structure setup
@@ -15,7 +16,8 @@
 
 ---
 
-### Phase 2: Correlation & Enrichment 
+### Phase 2: Correlation & Enrichment
+
 **Goal**: Understand what devices are connecting to
 
 - [x] DNS correlation engine
@@ -29,20 +31,22 @@
 
 ---
 
-### Phase 3: Behavioral Analysis 
+### Phase 3: Behavioral Analysis
+
 **Goal**: Detect unusual behavior and privacy leaks
 
 - [x] Session reconstruction
 - [x] Behavioral baseline per device
-- [ ] Anomaly detection algorithms
-- [ ] Privacy leak detection
-- [ ] Pattern matching engine
+- [x] Anomaly detection algorithms
+- [x] Privacy leak detection
+- [x] Pattern matching engine
 
 **Milestone**: Platform alerts on anomalies and privacy concerns
 
 ---
 
-### Phase 4: WiFi Security 
+### Phase 4: WiFi Security
+
 **Goal**: Monitor WiFi-specific security
 
 - [ ] 802.11 frame capture
@@ -55,7 +59,8 @@
 
 ---
 
-### Phase 5: Visualization 
+### Phase 5: Visualization
+
 **Goal**: Beautiful, interactive dashboard
 
 - [ ] Web server setup
@@ -69,7 +74,8 @@
 
 ---
 
-### Phase 6: IoT Monitoring 
+### Phase 6: IoT Monitoring
+
 **Goal**: Specialized IoT device security
 
 - [ ] IoT device discovery
@@ -81,7 +87,8 @@
 
 ---
 
-### Phase 7: Advanced Features 
+### Phase 7: Advanced Features
+
 **Goal**: ML, alerting, optimization
 
 - [ ] Machine learning integration

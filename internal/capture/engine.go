@@ -15,6 +15,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"sync/atomic"
 	"time"
 
@@ -39,6 +40,8 @@ type Engine struct {
 	deviceTracker   *enricher.DeviceTracker
 	sessionTracker  *correlator.SessionTracker
 	baselineTracker *analyzer.BaselineTracker
+	anomalyDetector *analyzer.AnomalyDetector
+	privacyScanner  *analyzer.PrivacyScanner
 
 	// Statistics
 	packetsProcessed uint64
@@ -108,6 +111,8 @@ func NewEngine(config *Config, store storage.Storage) (*Engine, error) {
 		deviceTracker:   tracker,
 		sessionTracker:  correlator.NewSessionTracker(5 * time.Minute),
 		baselineTracker: analyzer.NewBaselineTracker(100),
+		anomalyDetector: analyzer.NewAnomalyDetector(),
+		privacyScanner:  analyzer.NewPrivacyScanner(),
 	}
 
 	// Initialize inactive pcap handle to apply configuration settings
@@ -177,6 +182,8 @@ type PacketInfo struct {
 	DeviceVendor   string          // Source device vendor
 	DeviceHostname string          // Source device hostname
 	RawPacket      gopacket.Packet // Full packet for additional parsing
+	Anomalies      []analyzer.Anomaly
+	PrivacyIssues  []analyzer.PrivacyIssue
 }
 
 // Begins capturing packets in a blocking loop until the context is canceled.
@@ -244,6 +251,17 @@ func (e *Engine) Start(ctx context.Context, handler func(PacketInfo)) error {
 				// Update behavioral baseline
 				if e.baselineTracker != nil && info.EthSrcMAC != "" {
 					e.baselineTracker.UpdateBaseline(info.EthSrcMAC, flow)
+
+					// Detect Anomalies (Real-time)
+					if e.anomalyDetector != nil {
+						baseline := e.baselineTracker.GetBaseline(info.EthSrcMAC)
+						info.Anomalies = e.anomalyDetector.Detect(flow, baseline)
+					}
+				}
+
+				// Scan for Privacy Issues (Real-time)
+				if e.privacyScanner != nil {
+					info.PrivacyIssues = e.privacyScanner.Scan(flow)
 				}
 			}
 
@@ -312,6 +330,10 @@ func (e *Engine) extractPacketInfo(packet gopacket.Packet) PacketInfo {
 	// Handle ARP
 	if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
 		info.Protocol = "ARP"
+		arp, _ := arpLayer.(*layers.ARP)
+		// Extract IPv4 addresses from ARP payload
+		info.SrcIP = net.IP(arp.SourceProtAddress).String()
+		info.DstIP = net.IP(arp.DstProtAddress).String()
 	}
 
 	// Decode DNS layer details

@@ -126,112 +126,36 @@ func ShowAnomalyMenu(engine *capture.Engine, baselineTracker *analyzer.BaselineT
 }
 
 func detectAnomalies(flows []*models.Flow, baselines map[string]*analyzer.DeviceBaseline, tracker *analyzer.BaselineTracker) []AnomalyAlert {
-	var anomalies []AnomalyAlert
+	var alerts []AnomalyAlert
 	now := time.Now()
 
-	// Group flows by device (source MAC)
-	// Note: Flow doesn't have DeviceMAC directly, we'd need to correlate via IP
-	// For now, we'll check recent flows for anomaly patterns
+	privacyScanner := analyzer.NewPrivacyScanner()
 
 	for _, flow := range flows {
-		// Skip if flow is too old (only check recent activity)
-		if now.Sub(flow.LastSeen) > 5*time.Minute {
+		// Skip if flow is too old (only check recent activity - last 15 min)
+		if now.Sub(flow.LastSeen) > 15*time.Minute {
 			continue
 		}
 
-		// We need to find which device this flow belongs to
-		// This requires mapping flow.Key.SrcIP -> Device MAC
-		// For demonstration, we'll check baseline features directly
+		// 1. Run Detection
+		// Note: Detailed anomaly detection requires Device MAC correlation which is unavailable
+		// in the simple Flow struct here. We focus on device-agnostic Privacy Scanning.
 
-		// Check all baselines for anomalous patterns
-		for mac, baseline := range baselines {
-			if !tracker.IsEstablished(mac) {
-				continue // Skip baselines still learning
-			}
-
-			// Check for new applications
-			if flow.Application != "" && !baseline.HasApp(flow.Application) {
-				anomalies = append(anomalies, AnomalyAlert{
-					DeviceMAC:   mac,
-					AlertType:   "New Application",
-					Severity:    "MEDIUM",
-					Description: fmt.Sprintf("First time using: %s", flow.Application),
-					Timestamp:   flow.LastSeen,
-					Flow:        flow,
-				})
-			}
-
-			// Check for new destinations
-			dest := flow.DstDomain
-			if dest == "" {
-				dest = flow.Key.DstIP
-			}
-			if !baseline.HasDestination(dest) {
-				anomalies = append(anomalies, AnomalyAlert{
-					DeviceMAC:   mac,
-					AlertType:   "New Destination",
-					Severity:    "MEDIUM",
-					Description: fmt.Sprintf("Connecting to: %s", dest),
-					Timestamp:   flow.LastSeen,
-					Flow:        flow,
-				})
-			}
-
-			// Check for new countries
-			if flow.DstCountry != "" && !baseline.HasCountry(flow.DstCountry) {
-				severity := "HIGH"
-				// Some countries might be more suspicious than others
-				suspiciousCountries := []string{"RU", "CN", "KP", "IR"}
-				isSuspicious := false
-				for _, sc := range suspiciousCountries {
-					if flow.DstCountry == sc {
-						isSuspicious = true
-						severity = "CRITICAL"
-						break
-					}
-				}
-
-				desc := fmt.Sprintf("Connection to %s", flow.DstCountry)
-				if isSuspicious {
-					desc += " (high-risk country)"
-				}
-
-				anomalies = append(anomalies, AnomalyAlert{
-					DeviceMAC:   mac,
-					AlertType:   "New Geographic Location",
-					Severity:    severity,
-					Description: desc,
-					Timestamp:   flow.LastSeen,
-					Flow:        flow,
-				})
-			}
-
-			// Check for unusual timing
-			hour := flow.LastSeen.Hour()
-			if !baseline.IsActiveHour(hour) && flow.ByteCount > 1000000 {
-				// Large transfer during typically inactive hour
-				anomalies = append(anomalies, AnomalyAlert{
-					DeviceMAC:   mac,
-					AlertType:   "Unusual Activity Time",
-					Severity:    "LOW",
-					Description: fmt.Sprintf("Large transfer at %02d:00 (typically inactive)", hour),
-					Timestamp:   flow.LastSeen,
-					Flow:        flow,
-				})
-			}
-
-			// Limit anomalies per baseline to avoid spam
-			if len(anomalies) > 50 {
-				break
-			}
-		}
-
-		if len(anomalies) > 50 {
-			break
+		issues := privacyScanner.Scan(flow)
+		for _, issue := range issues {
+			alerts = append(alerts, AnomalyAlert{
+				DeviceMAC:   "Unknown",
+				DeviceName:  "Unknown",
+				AlertType:   string(issue.Type),
+				Severity:    "HIGH",
+				Description: issue.Description,
+				Timestamp:   flow.LastSeen,
+				Flow:        flow,
+			})
 		}
 	}
 
-	return anomalies
+	return alerts
 }
 
 func printAnomalyDetails(a AnomalyAlert, index int) {

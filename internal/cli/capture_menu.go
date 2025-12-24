@@ -15,13 +15,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/kleaSCM/netscope/internal/capture"
+	"github.com/kleaSCM/netscope/internal/enricher"
 	"github.com/kleaSCM/netscope/internal/parser"
 	"github.com/kleaSCM/netscope/internal/storage"
 )
+
+var localDeviceIP string
 
 // Holds configuration for packet capture.
 type CaptureConfig struct {
@@ -251,6 +255,21 @@ func startCapture(interfaceName, filter string, verbose bool, store storage.Stor
 		bytes   uint64
 	}
 
+	// Get local interface IP for display
+	localDeviceIP = ""
+	ifaceInfo, err := capture.FindInterface(interfaceName)
+	if err == nil && len(ifaceInfo.Addresses) > 0 {
+		for _, addr := range ifaceInfo.Addresses {
+			if strings.Contains(addr, ".") {
+				localDeviceIP = addr
+				break
+			}
+		}
+	}
+	if verbose {
+		fmt.Printf("ℹ️  Local IP detected: %s\n", localDeviceIP)
+	}
+
 	// Periodically report stats and save active flows
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -273,6 +292,7 @@ func startCapture(interfaceName, filter string, verbose bool, store storage.Stor
 				lastStats.bytes = bytes
 
 				// Persist active flows
+			case <-ticker.C:
 				if store != nil {
 					flows := engine.GetActiveFlows()
 					savedCount := 0
@@ -285,15 +305,21 @@ func startCapture(interfaceName, filter string, verbose bool, store storage.Stor
 							}
 						}
 					}
-					// debug output if needed
-					// if savedCount > 0 { fmt.Printf("[DB] Saved %d flows\n", savedCount) }
 				}
 			}
 		}
 	}()
 
-	// Callback executed for each captured packet
+	// Capture Loop
 	packetHandler := func(info capture.PacketInfo) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		engine.Stats() // Update internal stats (not printed here)
+
 		// Specialized parsing for DNS traffic
 		if parser.IsDNSPacket(info.RawPacket) {
 			query, response, err := parser.ParseDNS(info.RawPacket)
@@ -361,34 +387,116 @@ func startCapture(interfaceName, filter string, verbose bool, store storage.Stor
 }
 
 func printPacketSimple(info capture.PacketInfo) {
-	timestamp := info.Timestamp.Format("15:04:05.000")
+	timestamp := info.Timestamp.Format("15:04:05")
 
-	// Source Label: Hostname or IP
-	srcLabel := info.SrcIP
-	if info.DeviceHostname != "" {
-		srcLabel = fmt.Sprintf("%s (%s)", info.DeviceHostname, info.SrcIP)
+	// Resolve Names if missing (Reverse DNS)
+	srcName := info.DeviceHostname
+	if srcName == "" || strings.HasPrefix(srcName, "Device-") {
+		// Try to find a better name via DNS
+		dnsName := enricher.GetDNSResolver().LookupIP(info.SrcIP)
+		if dnsName != "" && dnsName != "N/A" {
+			srcName = dnsName
+		}
 	}
 
-	// Dest Label: Domain or IP
-	dstLabel := info.DstIP
-	if info.DstDomain != "" {
-		dstLabel = fmt.Sprintf("%s (%s)", info.DstDomain, info.DstIP)
+	dstName := info.DstDomain
+	if dstName == "" {
+		dstName = enricher.GetDNSResolver().LookupIP(info.DstIP)
+		if dstName == "N/A" {
+			dstName = ""
+		}
 	}
 
+	// 1. Friendly Labels
+	srcLabel := humanizeLabel(srcName, info.DeviceVendor, info.SrcIP)
+	dstLabel := humanizeLabel(dstName, "", info.DstIP)
+
+	// 2. Detect Direction / Type
+	direction := "↔"
+	if strings.HasPrefix(info.DstIP, "224.") || strings.HasPrefix(info.DstIP, "239.") || info.DstIP == "255.255.255.255" {
+		direction = "📢" // Broadcast/Multicast
+		dstLabel = "Broadcast/Multicast"
+	} else if isPrivateIP(info.SrcIP) && !isPrivateIP(info.DstIP) {
+		direction = "📤" // Upload/Request
+	} else if !isPrivateIP(info.SrcIP) && isPrivateIP(info.DstIP) {
+		direction = "📥" // Download/Response
+	}
+
+	// 3. Simplified Output
 	if info.SrcIP != "" && info.DstIP != "" {
-		fmt.Printf("[%s] %s:%d → %s:%d (%s, %d bytes)\n",
+		// Format: [Time] Dir Proto Source -> Destination (Bytes)
+		fmt.Printf("[%s] %s  %-4s  %s  %s  %s  (%d bytes)\n",
 			timestamp,
-			srcLabel, info.SrcPort,
-			dstLabel, info.DstPort,
+			direction,
 			info.Protocol,
+			srcLabel,
+			"→",
+			dstLabel,
 			info.Length)
 	} else if info.Protocol == "ARP" {
-		// ... existing ARP handling ...
-		fmt.Printf("[%s] ARP: %s → %s (%d bytes)\n", timestamp, info.EthSrcMAC, info.EthDstMAC, info.Length)
+		fmt.Printf("[%s] 🔊 ARP: Who has %s? Tell %s\n", timestamp, info.DstIP, info.SrcIP)
 	} else {
-		// ... existing generic handling ...
 		fmt.Printf("[%s] %s (%d bytes)\n", timestamp, info.Protocol, info.Length)
 	}
+
+	// Print One-Line Alerts (concise)
+	if len(info.PrivacyIssues) > 0 {
+		for _, issue := range info.PrivacyIssues {
+			fmt.Printf("   🚨 PRIVACY: %s\n", issue.Description)
+		}
+	}
+	if len(info.Anomalies) > 0 {
+		for _, anomaly := range info.Anomalies {
+			fmt.Printf("   ⚠️  ANOMALY: %s\n", anomaly.Description)
+		}
+	}
+}
+
+func humanizeLabel(name, vendor, ip string) string {
+	if name == "" {
+		return ip
+	}
+
+	// My Device (Identified by local interface IP)
+	if ip == localDeviceIP {
+		return "My Device (You) 💻"
+	}
+
+	if name == "" {
+		if vendor != "" {
+			return fmt.Sprintf("%s (%s)", vendor, ip)
+		}
+		return ip
+	}
+
+	// Simplify generic device names
+	if strings.HasPrefix(name, "Device-") {
+		if vendor != "" {
+			return fmt.Sprintf("%s Device (%s)", vendor, ip)
+		}
+		return fmt.Sprintf("Device (%s)", ip)
+	}
+
+	// Simplify generic device names
+	if strings.HasPrefix(name, "Device-") {
+		if vendor != "" {
+			return fmt.Sprintf("%s Device", vendor)
+		}
+		// Generic fallback
+		return fmt.Sprintf("Device (%s)", ip)
+	}
+
+	// Truncate overly long domains
+	if len(name) > 30 {
+		return name[:27] + "..."
+	}
+
+	return name
+}
+
+// Helper to deduce private IPs
+func isPrivateIP(ip string) bool {
+	return strings.HasPrefix(ip, "192.168.") || strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "172.")
 }
 
 func printPacketVerbose(info capture.PacketInfo) {
@@ -407,6 +515,20 @@ func printPacketVerbose(info capture.PacketInfo) {
 		fmt.Printf("IP:        %s → %s\n", info.SrcIP, info.DstIP)
 		if info.SrcPort > 0 {
 			fmt.Printf("Ports:     %d → %d\n", info.SrcPort, info.DstPort)
+		}
+	}
+
+	// Print Privacy Alerts
+	if len(info.PrivacyIssues) > 0 {
+		for _, issue := range info.PrivacyIssues {
+			fmt.Printf("⛔ PRIVACY: [%s] %s\n", issue.Type, issue.Description)
+		}
+	}
+
+	// Print Anomaly Alerts
+	if len(info.Anomalies) > 0 {
+		for _, anomaly := range info.Anomalies {
+			fmt.Printf("⚠️  ANOMALY: [%s] %s\n", anomaly.Type, anomaly.Description)
 		}
 	}
 }
