@@ -19,7 +19,8 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 
 ## Key Features
 
-### Phase 1: Foundation (Current Focus)
+### Foundation
+
 - Real-time packet capture from network interfaces
 - Multi-layer protocol parsing (Ethernet → IP → TCP/UDP → Application)
 - DNS query tracking and correlation
@@ -27,40 +28,46 @@ NetScope is a powerful, academic network observatory tool designed to capture, a
 - Device identification and tracking
 - Efficient storage and querying
 
-### Phase 2: Intelligence
+### Intelligence
+
 - DNS-to-IP correlation engine
 - GeoIP enrichment (country, city, ASN)
 - Device fingerprinting (OS detection, vendor identification)
 - Application identification via TLS fingerprints
 - Traffic classification
 
-### Phase 3: Analysis
+### Analysis
+
 - Behavioral baseline establishment
 - Anomaly detection (unusual traffic patterns, beaconing, data exfiltration)
 - Privacy leak detection (third-party trackers, unexpected connections)
 - Session reconstruction and flow analysis
 
-### Phase 4: WiFi Security
+### WiFi Security
+
 - 802.11 frame capture and analysis
 - Rogue AP detection
 - Evil twin attack detection
 - WPA handshake capture (academic purposes)
 - Client probing behavior analysis
 
-### Phase 5: Visualization
+### Visualization
+
 - Real-time web dashboard
 - 3D network topology visualization
 - Interactive traffic timeline
 - Per-device analytics
 - Bandwidth graphs and protocol distribution
 
-### Phase 6: IoT Monitoring
+### IoT Monitoring
+
 - Automatic IoT device discovery
 - Behavioral monitoring and alerting
 - Vulnerability scanning
 - Traffic blocking integration
 
-### Phase 7: Advanced
+### Advanced
+
 - Machine learning for traffic classification
 - Intelligent alerting system
 - Automated reporting
@@ -230,125 +237,32 @@ netscope/
 ## Technology Stack
 
 ### Core
+
 - **Language**: Go 1.21+
 - **Packet Capture**: libpcap (Linux/macOS), Npcap (Windows)
 - **Protocol Parsing**: gopacket
 
 ### Storage
+
 - **Development**: SQLite3
 - **Production**: PostgreSQL / TimescaleDB
 - **Caching**: (Future) Redis
 
 ### Enrichment
+
 - **GeoIP**: MaxMind GeoLite2
 - **Fingerprinting**: JA3/JA4 libraries
 
 ### Frontend (Phase 5+)
+
 - **Server**: Go net/http or Gin
 - **Visualization**: Three.js, D3.js
 - **Real-time**: WebSockets
 
----
-
-## Development Roadmap
-
-### Phase 1: Foundation (Weeks 1-5)
-**Goal**: Capture, parse, store, query basic traffic data
-
-- [x] Project structure setup
-- [ ] Packet capture engine
-- [ ] Protocol parser (Layer 2-4)
-- [ ] DNS & TLS parsing
-- [ ] Flow tracking
-- [ ] Database schema & storage
-- [ ] Basic CLI query interface
-
-**Milestone**: Can capture traffic, identify devices, track connections, query flows
-
----
-
-### Phase 2: Correlation & Enrichment (Weeks 6-8)
-**Goal**: Understand what devices are connecting to
-
-- [ ] DNS correlation engine
-- [ ] GeoIP integration
-- [ ] Device fingerprinting
-- [ ] JA3/JA4 fingerprinting
-- [ ] Application identification
-- [ ] Traffic classification
-
-**Milestone**: Every connection shows device → domain → location → app
-
----
-
-### Phase 3: Behavioral Analysis (Weeks 9-12)
-**Goal**: Detect unusual behavior and privacy leaks
-
-- [ ] Session reconstruction
-- [ ] Behavioral baseline per device
-- [ ] Anomaly detection algorithms
-- [ ] Privacy leak detection
-- [ ] Pattern matching engine
-
-**Milestone**: Platform alerts on anomalies and privacy concerns
-
----
-
-### Phase 4: WiFi Security (Weeks 13-15)
-**Goal**: Monitor WiFi-specific security
-
-- [ ] 802.11 frame capture
-- [ ] AP detection & monitoring
-- [ ] Rogue AP detection
-- [ ] Client probing analysis
-- [ ] WPA handshake capture
-
-**Milestone**: Full WiFi security audit capabilities
-
----
-
-### Phase 5: Visualization (Weeks 16-20)
-**Goal**: Beautiful, interactive dashboard
-
-- [ ] Web server setup
-- [ ] Real-time dashboard
-- [ ] 3D network topology
-- [ ] Timeline view
-- [ ] Per-device detail pages
-- [ ] Query builder UI
-
-**Milestone**: Production-ready web interface
-
----
-
-### Phase 6: IoT Monitoring (Weeks 21-24)
-**Goal**: Specialized IoT device security
-
-- [ ] IoT device discovery
-- [ ] Behavior monitoring
-- [ ] Vulnerability scanning
-- [ ] Traffic blocking integration
-
-**Milestone**: Comprehensive IoT security monitoring
-
----
-
-### Phase 7: Advanced Features (Weeks 25+)
-**Goal**: ML, alerting, optimization
-
-- [ ] Machine learning integration
-- [ ] Intelligent alerting system
-- [ ] Automated reporting
-- [ ] Performance optimization
-- [ ] Multi-interface support
-
-**Milestone**: Enterprise-grade feature set
-
----
-
 ## Getting Started
 
 ### Prerequisites
+
 ```bash
 # Linux (Debian/Ubuntu)
 sudo apt-get install libpcap-dev build-essential
@@ -361,6 +275,7 @@ brew install libpcap
 ```
 
 ### Installation
+
 ```bash
 # Clone repository
 git clone https://github.com/kleaSCM/netscope.git
@@ -377,6 +292,7 @@ sudo ./bin/netscope
 ```
 
 ### Basic Usage
+
 ```bash
 # List available interfaces
 sudo ./netscope interfaces
@@ -399,6 +315,7 @@ sudo ./netscope web --port 8080
 ## Security & Ethics
 
 ### What This Tool Does
+
 - ✅ Captures metadata about network traffic
 - ✅ Analyzes plaintext protocols (HTTP, DNS, etc.)
 - ✅ Observes encrypted traffic patterns (without decryption)
@@ -406,6 +323,7 @@ sudo ./netscope web --port 8080
 - ✅ Detects anomalies and privacy leaks
 
 ### What This Tool Does NOT Do
+
 - ❌ Decrypt TLS/SSL traffic
 - ❌ Install fake certificates (MITM attacks)
 - ❌ Break encryption algorithms
@@ -413,6 +331,7 @@ sudo ./netscope web --port 8080
 - ❌ Attack other networks
 
 ### Legal Considerations
+
 - **Only use on networks you own or have explicit permission to monitor**
 - Packet capture may require root/administrator privileges
 - Some jurisdictions have laws about network monitoring
@@ -420,6 +339,7 @@ sudo ./netscope web --port 8080
 - This tool is for educational and personal network security purposes only
 
 ### Privacy
+
 - All data stays local (no cloud uploads)
 - Encrypted traffic payloads are not decrypted or stored
 - Metadata is stored securely on your system
